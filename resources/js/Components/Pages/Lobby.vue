@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import Games from "./Lobby/Games.vue";
-import { getUser } from "../../api/user";
 import state from "../../state";
+import { wsmanager, WsChannel } from "../../ws";
+import { ref } from "vue";
 
+
+let online = ref(0);
+
+wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: object) => {
+    online.value = payload.online;
+})
+
+wsmanager.subscribe(WsChannel.Main, (type: string, payload: object) => {})
 
 </script>
 
@@ -16,9 +25,11 @@ import state from "../../state";
             <Games />
         </div>
         <div class="panel game">
-            <div class="panel-title">Игра</div>
+            <div class="panel-title">
+                Игра
+            </div>
         </div>
-        <div class="chat-panel">
+        <div class="right-panel">
             <div class="panel player-panel">
                 <div class="player-panel-info">
                     <div class="player-panel-info-item --name">
@@ -31,8 +42,11 @@ import state from "../../state";
                     </div>
                 </div>
             </div>
-            <div class="panel">
-                <div class="panel-title">Чат</div>
+            <div class="panel chat">
+                <div class="panel-title">
+                    Чат
+                    <div class="game-online">Онлайн: {{ online }}</div>
+                </div>
             </div>
         </div>
     </div>
@@ -47,7 +61,7 @@ import state from "../../state";
     height: 100vh;
     box-sizing: border-box;
 }
-.chat-panel {
+.right-panel {
     display: grid;
     grid-template-rows: 100px 1fr;
     gap: 20px;
@@ -113,6 +127,16 @@ import state from "../../state";
         height: calc(100% - 40px);
         border-left: 2px dashed #2f2f2f;
         left: -12px;
+    }
+}
+.chat {
+    & .panel-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    & .game-online {
+        font-size: 14px;
     }
 }
 </style>

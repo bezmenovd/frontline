@@ -42,7 +42,7 @@ let currentComponent = computed(() => {
 <template>
     <div class="container">
         <transition name="fade" mode="out-in">
-            <component :is="currentComponent" :key="currentComponent" />
+            <component :is="currentComponent"/>
         </transition>
         <Loading v-if="loadingNow"/>
     </div>
