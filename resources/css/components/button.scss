@@ -1,0 +1,34 @@
+.button {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    animation: ease-in .3s background-color;
+    height: fit-content;
+    width: fit-content;
+    font-size: 14px;
+
+    &.--main {
+        line-height: 18px;
+        padding: 11.5px 35px;
+
+        background-color: #ff2b2083;
+        &:hover {
+            background-color: #ff2b20ce;
+        }
+        &:active {
+            background-color: #ff2b2075;
+        }
+    }
+    &.--text {
+        color: white;
+
+        &:hover {
+            color: #ebebeb;
+            text-decoration: underline;
+        }
+    }
+}

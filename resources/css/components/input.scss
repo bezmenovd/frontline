@@ -1,0 +1,25 @@
+.input {
+    &-group {
+        height: fit-content;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    &-title {
+        opacity: .9;
+        font-size: 16px;
+    }
+    &-element {
+        width: 100%;
+        background: #0f0f0f;
+        border: none;
+        border-radius: 6px;
+        outline: none;
+        height: 40px;
+        padding: 6px 12px;
+        caret-color: white;
+        color: white;
+        font-size: 16px;
+        border: 1px solid rgba(229, 231, 235, 0.1450980392);
+    }
+}
