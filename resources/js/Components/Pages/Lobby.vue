@@ -2,12 +2,20 @@
 import Games from "./Lobby/Games.vue";
 import state from "../../state";
 import { wsmanager, WsChannel } from "../../ws";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { Page } from "../../types";
 import { useToast } from "vue-toast-notification";
 
 
 let online = ref(0);
+let chatElement = null
+
+onMounted(() => {
+    chatElement = document.querySelector(".chat-area")
+    setTimeout(() => {
+        chatElement.scrollTop = chatElement.scrollHeight;
+    }, 100)
+})
 
 wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
     if (type == "online") {
@@ -15,6 +23,9 @@ wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
     }
     if (type == "new_message") {
         state.lobby.chat_messages.push(payload)
+        setTimeout(() => {
+            chatElement.scrollTop = chatElement.scrollHeight;
+        }, 100)
     }
 })
 
@@ -86,7 +97,7 @@ let sendMessage = function() {
                     </div>
                 </div>
                 <div class="chat-input">
-                    <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="100">
+                    <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="46">
                 </div>
             </div>
         </div>
@@ -106,6 +117,7 @@ let sendMessage = function() {
     display: grid;
     grid-template-rows: 100px 1fr;
     gap: 20px;
+    max-height: calc(100vh - 40px);
 }
 .player-panel {
     max-height: unset;
@@ -165,7 +177,7 @@ let sendMessage = function() {
     display: grid;
     grid-template-rows: 38px 1fr;
     gap: 20px;
-    max-height: calc(100% - 40px);
+    max-height: calc(100vh - 40px);
 
     &-title {
         display: flex;
@@ -175,6 +187,7 @@ let sendMessage = function() {
 }
 .game {
     position: relative;
+    max-height: calc(100vh - 40px);
 
     &::before {
         content: '';
@@ -186,6 +199,7 @@ let sendMessage = function() {
     }
 }
 .chat {
+    max-height: calc(100vh - 160px);
     display: grid;
     grid-template-rows: 40px 1fr 40px;
     gap: 10px;
@@ -202,8 +216,8 @@ let sendMessage = function() {
     &-area {
         background: #0f0f0f;
         border: 1px solid rgba(229, 231, 235, 0.1450980392);
-
         overflow-y: auto;
+        // max-height: calc(100% - 100px);
     }
     &-message {
         font-family: monospace;
