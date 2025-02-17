@@ -23,11 +23,11 @@ onMounted(() => {
             state.page = Page.Lobby
         }).catch(error => {
             useToast({position:'top'}).error(error)
+        }).finally(() => {
+            loading(false)
         })
-        state.page = Page.Lobby
     }).catch((e) => {
         state.page = Page.Login
-    }).finally(() => {
         loading(false)
     })
 })

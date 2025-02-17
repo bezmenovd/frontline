@@ -37,8 +37,10 @@ wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
 })
 
 let logout = function() {
+    wsmanager.close()
     localStorage.removeItem('token')
     state.page = Page.Login
+    wsmanager.reopen()
 }
 
 
@@ -97,7 +99,7 @@ let sendMessage = function() {
                     </div>
                 </div>
                 <div class="chat-input">
-                    <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="46">
+                    <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="46" placeholder="Для отправки сообщения нажмите Enter">
                 </div>
             </div>
         </div>

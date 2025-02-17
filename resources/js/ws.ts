@@ -17,11 +17,9 @@ class WsClient
         this.socket.onopen = () => {
             this.onOpen()
         }
-
         this.socket.onmessage = (e: MessageEvent) => {
             this.onMessage(e)
         }
-        
         this.socket.onclose = () => {
             this.onClose()
         }
@@ -29,6 +27,25 @@ class WsClient
 
     send(args: { token: string, channel: WsChannel, type: string, payload: object }) {
         this.socket.send(JSON.stringify(args))
+    }
+
+    close() {
+        this.socket.close()
+    }
+
+    reopen() {
+        this.close()
+        this.socket = new WebSocket("http://0.0.0.0:8080");
+
+        this.socket.onopen = () => {
+            this.onOpen()
+        }
+        this.socket.onmessage = (e: MessageEvent) => {
+            this.onMessage(e)
+        }
+        this.socket.onclose = () => {
+            this.onClose()
+        }
     }
 }
 
@@ -88,6 +105,14 @@ class WsManager
             type,
             payload,
         })
+    }
+
+    close() {
+        wsclient.close()
+    }
+
+    reopen() {
+        wsclient.reopen()
     }
 }
 

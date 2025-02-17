@@ -40,10 +40,11 @@ let submit = function() {
             state.page = Page.Lobby
         }).catch(error => {
             useToast({position:'top'}).error(error)
+        }).finally(() => {
+            loading(false)
         })
     }).catch((error: string) => {
         useToast({position:'top'}).error(error)
-    }).finally(() => {
         loading(false)
     })
 }
