@@ -10,3 +10,13 @@ export type User = {
     rating: number,
 }
 
+export type ChatMessage = {
+    id: number,
+    datetime: string,
+    user: {
+        id: number,
+        name: string,
+    },
+    text: string,
+}
+

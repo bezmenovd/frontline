@@ -2,7 +2,6 @@ export enum WsChannel {
     Main = "main",
     Lobby = "lobby",
     Host = "host",
-    Chat = "chat",
 }
 
 class WsClient
@@ -39,10 +38,9 @@ const wsclient = new WsClient();
 class WsManager
 {
     channels = {
-        [WsChannel.Main]: (type: string, payload: object) => {},
-        [WsChannel.Lobby]: (type: string, payload: object) => {},
-        [WsChannel.Host]: (type: string, payload: object) => {},
-        [WsChannel.Chat]: (type: string, payload: object) => {},
+        [WsChannel.Main]: (type: string, payload: any) => {},
+        [WsChannel.Lobby]: (type: string, payload: any) => {},
+        [WsChannel.Host]: (type: string, payload: any) => {},
     };
 
     constructor() {
@@ -50,7 +48,7 @@ class WsManager
             let data : {
                 channel: WsChannel,
                 type: string,
-                payload: object
+                payload: any
             } = JSON.parse(event?.data || '{}') || {};
 
             if (data.type.length > 0) {
@@ -59,7 +57,7 @@ class WsManager
         }
     }
 
-    subscribe(channel: WsChannel, callback: (type: string, payload: object) => void) {
+    subscribe(channel: WsChannel, callback: (type: string, payload: any) => void) {
         wsclient.send({
             token: localStorage.getItem('token') || '',
             channel: WsChannel.Main,
@@ -68,7 +66,7 @@ class WsManager
                 channel,
             }
         })
-        this.channels[channel] = (type: string, payload: object) => callback(type, payload);
+        this.channels[channel] = (type: string, payload: any) => callback(type, payload);
     }
 
     unsubscribe(channel: WsChannel) {
@@ -80,10 +78,10 @@ class WsManager
                 channel,
             }
         })
-        this.channels[channel] = (type: string, payload: object) => {}
+        this.channels[channel] = (type: string, payload: any) => {}
     }
 
-    send(channel: WsChannel, type: string, payload: object) {
+    send(channel: WsChannel, type: string, payload: any) {
         wsclient.send({
             token: localStorage.getItem('token') || '',
             channel,

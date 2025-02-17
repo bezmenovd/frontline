@@ -4,28 +4,36 @@ import { loading, loadingNow } from "./loading";
 import Login from "./Pages/Login.vue";
 import Register from "./Pages/Register.vue";
 import Lobby from "./Pages/Lobby.vue";
-import State from "../state";
+import state from "../state";
 import { Page, User } from "../types";
 import { getUser } from "../api/user";
 import { computed, onMounted } from "vue";
 import axios from "axios";
+import { fetchLobby } from '../api/lobby';
+import { useToast } from 'vue-toast-notification';
 
 axios.defaults.headers.common['X-TOKEN'] = localStorage.getItem('token');
 
 onMounted(() => {
     loading()
     getUser().then((user: User) => {
-        State.user = user
-        State.page = Page.Lobby
+        state.user = user
+        fetchLobby().then((response) => {
+            state.lobby.chat_messages = response.chat_messages
+            state.page = Page.Lobby
+        }).catch(error => {
+            useToast({position:'top'}).error(error)
+        })
+        state.page = Page.Lobby
     }).catch((e) => {
-        State.page = Page.Login
+        state.page = Page.Login
     }).finally(() => {
         loading(false)
     })
 })
 
 let currentComponent = computed(() => {
-    switch (State.page) {
+    switch (state.page) {
         case Page.Login:
             return Login;
         case Page.Register:

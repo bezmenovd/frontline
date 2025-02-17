@@ -15,7 +15,11 @@ let data = {
     passwordRepeat: "",
 }
 
+let allowSubmit = true;
 let submit = function() {
+    if (!allowSubmit) {
+        return
+    }
     if (data.name.length == 0 || data.password.length == 0 || data.password.length == 0) {
         return
     }
@@ -24,6 +28,11 @@ let submit = function() {
         return
     }
 
+    allowSubmit = false
+    setTimeout(() => {
+        allowSubmit = true
+    }, 3000)
+
     loading()
 
     register(data.name, data.email, data.password).then((r) => {
@@ -31,8 +40,8 @@ let submit = function() {
         axios.defaults.headers.common['X-TOKEN'] = r.token;
         state.user = r.user
         state.page = Page.Lobby
-    }).catch((r:{error:string}) => {
-        useToast({position:'top'}).error(r.error)
+    }).catch((error: string) => {
+        useToast({position:'top'}).error(error)
     }).finally(() => {
         loading(false)
     })

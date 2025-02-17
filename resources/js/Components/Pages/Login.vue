@@ -6,6 +6,7 @@ import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import { loading } from '../loading';
 import axios from 'axios';
+import { fetchLobby } from '../../api/lobby';
 
 
 let data = {
@@ -13,10 +14,19 @@ let data = {
     password: "",
 }
 
+let allowSubmit = true;
 let submit = function() {
+    if (!allowSubmit) {
+        return
+    }
     if (data.name.length == 0 || data.password.length == 0) {
         return
     }
+
+    allowSubmit = false
+    setTimeout(() => {
+        allowSubmit = true
+    }, 3000)
 
     loading()
 
@@ -24,9 +34,15 @@ let submit = function() {
         localStorage.setItem('token', r.token)
         axios.defaults.headers.common['X-TOKEN'] = r.token;
         state.user = r.user
-        state.page = Page.Lobby
-    }).catch((r:{error:string}) => {
-        useToast({position:'top'}).error(r.error)
+
+        fetchLobby().then((response) => {
+            state.lobby.chat_messages = response.chat_messages
+            state.page = Page.Lobby
+        }).catch(error => {
+            useToast({position:'top'}).error(error)
+        })
+    }).catch((error: string) => {
+        useToast({position:'top'}).error(error)
     }).finally(() => {
         loading(false)
     })

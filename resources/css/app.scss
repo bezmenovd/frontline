@@ -6,3 +6,11 @@
 .v-toast__icon {
     display: none !important;
 }
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.123);
+    border-radius: 2rem;
+}

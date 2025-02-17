@@ -36,13 +36,13 @@ class UserController
 
         if (is_null($user)) {
             return response()->json([
-                'error' => 'Неправильные имя пользователя и/или пароль'
+                'error' => 'Неверные имя пользователя и/или пароль'
             ]);
         }
 
         if (! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'error' => 'Неправильные имя пользователя и/или пароль'
+                'error' => 'Неверные имя пользователя и/или пароль'
             ]);
         }
 

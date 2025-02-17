@@ -58,6 +58,9 @@ class ChannelManager
                             }
                     };
                 break;
+                case "lobby":
+                    $this->lobbyChannel->handle($client, $data['type'], $data['payload']);
+                break;
             };
         });
 
