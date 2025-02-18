@@ -10,6 +10,7 @@ class WsClient
     onOpen: () => void = () => {};
     onMessage: (e: MessageEvent) => void = () => {};
     onClose: () => void = () => {};
+    onError: () => void = () => {};
     
     constructor() {
         this.socket = new WebSocket("http://0.0.0.0:8080");
@@ -23,9 +24,12 @@ class WsClient
         this.socket.onclose = () => {
             this.onClose()
         }
+        this.socket.onerror = () => {
+            this.onError()
+        }
     }
 
-    send(args: { token: string, channel: WsChannel, type: string, payload: object }) {
+    send(args: { token: string, channel?: WsChannel, type: string, payload: object }) {
         this.socket.send(JSON.stringify(args))
     }
 
@@ -46,10 +50,11 @@ class WsClient
         this.socket.onclose = () => {
             this.onClose()
         }
+        this.socket.onerror = () => {
+            this.onError()
+        }
     }
 }
-
-const wsclient = new WsClient();
 
 
 class WsManager
@@ -60,8 +65,11 @@ class WsManager
         [WsChannel.Host]: (type: string, payload: any) => {},
     };
 
+    wsclient: WsClient;
+
     constructor() {
-        wsclient.onMessage = (event?: MessageEvent) => {
+        this.wsclient = new WsClient()
+        this.wsclient.onMessage = (event?: MessageEvent) => {
             let data : {
                 channel: WsChannel,
                 type: string,
@@ -72,12 +80,14 @@ class WsManager
                 this.channels[data.channel](data.type, data.payload);
             }
         }
+        this.wsclient.onError = () => {
+            throw new Error("failed to connect");
+        }
     }
 
     subscribe(channel: WsChannel, callback: (type: string, payload: any) => void) {
-        wsclient.send({
+        this.wsclient.send({
             token: localStorage.getItem('token') || '',
-            channel: WsChannel.Main,
             type: "subscribe",
             payload: {
                 channel,
@@ -87,9 +97,8 @@ class WsManager
     }
 
     unsubscribe(channel: WsChannel) {
-        wsclient.send({
+        this.wsclient.send({
             token: localStorage.getItem('token') || '',
-            channel: WsChannel.Main,
             type: "unsubscribe",
             payload: {
                 channel,
@@ -99,7 +108,7 @@ class WsManager
     }
 
     send(channel: WsChannel, type: string, payload: any) {
-        wsclient.send({
+        this.wsclient.send({
             token: localStorage.getItem('token') || '',
             channel,
             type,
@@ -108,11 +117,11 @@ class WsManager
     }
 
     close() {
-        wsclient.close()
+        this.wsclient.close()
     }
 
     reopen() {
-        wsclient.reopen()
+        this.wsclient.reopen()
     }
 }
 

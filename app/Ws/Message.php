@@ -4,8 +4,9 @@ namespace App\Ws;
 
 class Message
 {
+    public string $channel;
+
     public function __construct(
-        public string $channel,
         public string $type,
         public mixed $payload = null,
     ) {}

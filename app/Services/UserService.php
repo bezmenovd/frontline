@@ -6,6 +6,6 @@ class UserService
 {
     public function generateToken(): string
     {
-        return md5(microtime(true) * random_int(1,100));
+        return sha1(microtime(true) * random_int(1,100));
     }
 }

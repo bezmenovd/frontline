@@ -7,6 +7,14 @@ import { Page } from "../../types";
 import { useToast } from "vue-toast-notification";
 
 
+
+let logout = function() {
+    wsmanager.close()
+    localStorage.removeItem('token')
+    state.page = Page.Login
+    wsmanager.reopen()
+}
+
 let online = ref(0);
 let chatElement = null
 
@@ -17,31 +25,24 @@ onMounted(() => {
     }, 100)
 })
 
-wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
-    if (type == "online") {
-        online.value = payload.online;
+wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
+    if (type === "already_logged_in") {
+        useToast({position:'top'}).error("Пользователь уже авторизован")
+        logout()
     }
-    if (type == "new_message") {
+})
+
+wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
+    if (type === "online") {
+        online.value = payload;
+    }
+    if (type === "new_message") {
         state.lobby.chat_messages.push(payload)
         setTimeout(() => {
             chatElement.scrollTop = chatElement.scrollHeight;
         }, 100)
     }
 })
-
-wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
-    if (type == "already_logged_in") {
-        useToast({position:'top'}).error("Этот пользователь уже в игре");
-        logout();
-    }
-})
-
-let logout = function() {
-    wsmanager.close()
-    localStorage.removeItem('token')
-    state.page = Page.Login
-    wsmanager.reopen()
-}
 
 
 let newMessageText = ref("");
@@ -89,12 +90,12 @@ let sendMessage = function() {
             <div class="panel chat">
                 <div class="panel-title">
                     Чат
-                    <div class="game-online">Онлайн: {{ online }}</div>
+                    <div class="game-online">Онлайн: <span style="font-family: monospace">{{ online }}</span></div>
                 </div>
                 <div class="chat-area">
                     <div class="chat-message" v-for="message in state.lobby.chat_messages">
                         <div class="chat-message-time">[{{ message.datetime }}]</div>
-                        <div class="chat-message-user">{{ message.user.name }}: </div>
+                        <div class="chat-message-user">{{ message.user.name }}</div>: 
                         {{ message.text }}
                     </div>
                 </div>
@@ -190,6 +191,7 @@ let sendMessage = function() {
 .game {
     position: relative;
     max-height: calc(100vh - 40px);
+    overflow: visible;
 
     &::before {
         content: '';
@@ -238,6 +240,11 @@ let sendMessage = function() {
             display: inline;
             font-size: 14px;
             opacity: .8;
+
+            &:hover {
+                text-decoration: underline;
+                cursor: pointer;
+            }
         }
     }
 }

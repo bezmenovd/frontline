@@ -2,21 +2,9 @@
 
 namespace App\Ws;
 
-class Events
+class EventBus
 {
     public array $handlers = [];
-
-
-    protected static ?Events $instance = null;
-
-    public static function get(): static
-    {
-        if (is_null(static::$instance)) {
-            static::$instance = new Events();
-        }
-
-        return static::$instance;
-    }
 
     public function on(string $event, callable $callback)
     {

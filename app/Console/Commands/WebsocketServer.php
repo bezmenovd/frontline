@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Ws\ChannelManager;
+use App\Ws\GameServer;
 use Illuminate\Console\Command;
-use WebSocket;
+use Swoole\WebSocket\Server;
 
 class WebsocketServer extends Command
 {
@@ -20,16 +20,14 @@ class WebsocketServer extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Websocket-server';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $server = new Websocket\Server(8080);
-        $manager = new ChannelManager($server);
-
-        $server->start();
+        $gameServer = new GameServer(new Server("0.0.0.0", 8080));
+        $gameServer->start();
     }
 }

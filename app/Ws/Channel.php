@@ -2,29 +2,61 @@
 
 namespace App\Ws;
 
+use Illuminate\Support\Facades\Log;
+use Swoole\WebSocket\Server;
+
 abstract class Channel 
 {
     public array $clients = [];
 
-    public function subscribe(Client $client): void 
-    {
-        if (count(array_filter($this->clients, fn(Client $c) => spl_object_id($c->connection) === spl_object_id($client->connection))) == 0) {
-            $this->clients[] = $client;
-        }
+    public function __construct(
+        public Server $server,
+        public State $state,
+        public EventBus $eventBus,
+    ) {
+        $this->initialize();
     }
 
-    public function unsubscribe(Client $client): void 
+    abstract public function channel(): string;
+    abstract public function initialize(): void;
+    abstract public function handle(Client $client, string $type, mixed $payload): void;
+
+    public function send(Client $client, Message $message): void
     {
-        $this->clients = array_filter($this->clients, fn(Client $c) => spl_object_id($c->connection) !== spl_object_id($client->connection));
+        $message->channel = $this->channel();
+
+        try {
+            $this->server->push($client->fd, $message->toString());
+        } catch (\Exception $e) {
+            Log::error("ws channel: client not connected: " . $e->getMessage(), ['client' => $client]);
+        }
     }
 
     public function broadcast(Message $message): void
     {
         foreach ($this->clients as $client) {
             /** @var Client $client */
-            $client->connection->text($message->toString());
+            $this->send($client, $message);
         }
     }
 
-    abstract public function handle(Client $client, string $type, mixed $payload): void;
+    public function subscribe(Client $client): bool 
+    {
+        foreach ($this->clients as $existingClient) {
+            /** @var Client $client */
+            if ($existingClient->token === $client->token) {
+                $this->send($client, new Message("already_subscribed"));
+                return false;
+            }
+        }
+        
+        $this->clients[] = $client;
+
+        return true;
+    }
+
+    public function unsubscribe(Client $client): void 
+    {
+        $this->clients = array_filter($this->clients, fn(Client $c) => $c->fd !== $client->fd);
+    }
 }

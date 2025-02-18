@@ -46,9 +46,6 @@ class UserController
             ]);
         }
 
-        $user->token = $this->userService->generateToken();
-        $user->save();
-
         return response()->json([
             'user' => [
                 'name' => $user->name,
