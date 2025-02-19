@@ -13,7 +13,7 @@ class WsClient
     onError: () => void = () => {};
     
     constructor() {
-        this.socket = new WebSocket("http://0.0.0.0:8080");
+        this.socket = new WebSocket("ws://localhost:8080");
 
         this.socket.onopen = () => {
             this.onOpen()
@@ -39,7 +39,7 @@ class WsClient
 
     reopen() {
         this.close()
-        this.socket = new WebSocket("http://0.0.0.0:8080");
+        this.socket = new WebSocket("ws://localhost:8080");
 
         this.socket.onopen = () => {
             this.onOpen()

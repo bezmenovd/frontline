@@ -65,7 +65,7 @@ let goToRegister = function() {
             </div>
             <div class="input-group">
                 <div class="input-title">Пароль</div>
-                <input class="input-element" type="password" spellcheck="false" maxlength="26" v-model="data.password">
+                <input class="input-element" type="password" spellcheck="false" inputmode="text" autocomplete="off" autofill="off" maxlength="26" v-model="data.password">
             </div>
         </div>
         <div class="buttons">

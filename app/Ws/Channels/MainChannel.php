@@ -19,15 +19,17 @@ class MainChannel extends Channel
     public function subscribe(Client $client): bool
     {
         $subscribed = parent::subscribe($client);
-        print("client $client->token : $client->fd " . ($subscribed ? "subscribed" : "not subscribed") . ", clients: ".count($this->clients)."\n");
+        
         if (! $subscribed) {
             $this->send($client, new Message("already_logged_in"));
-            $this->server->disconnect($client->fd);
+            try {
+                $this->server->disconnect($client->fd);
+            } catch (\Exception $e) {}
             return false;
         }
 
-        $this->state->online = count($this->clients);
-        $this->eventBus->dispatch('online_changed');
+        $this->redisClient->set("online", count($this->getClients()));
+        $this->eventBus->dispatch("online_changed");
 
         return $subscribed;
     }
@@ -36,8 +38,8 @@ class MainChannel extends Channel
     {
         parent::unsubscribe($client);
 
-        $this->state->online = count($this->clients);
-        $this->eventBus->dispatch('online_changed');
+        $this->redisClient->set("online", count($this->getClients()));
+        $this->eventBus->dispatch("online_changed");
     }
 
     public function handle(Client $client, string $type, mixed $payload): void
