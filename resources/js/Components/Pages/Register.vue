@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { register } from '../../api/user';
 import state from '../../state';
-import { Page, User } from '../../types';
+import { Host, Page, User } from '../../types';
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import { loading } from '../loading';
 import axios from 'axios';
+import { fetchLobby } from '../../api/lobby';
 
 
 let data = {
@@ -39,16 +40,20 @@ let submit = function() {
         localStorage.setItem('token', r.token)
         axios.defaults.headers.common['X-TOKEN'] = r.token;
         state.user = r.user
-        state.page = Page.Lobby
+        
+        fetchLobby().then((response) => {
+            state.lobby.chatMessages = response.chatMessages
+            state.lobby.hosts.list = response.hosts
+            state.page = Page.Lobby
+        }).catch(error => {
+            useToast({position:'top'}).error(error)
+        }).finally(() => {
+            loading(false)
+        })
     }).catch((error: string) => {
         useToast({position:'top'}).error(error)
-    }).finally(() => {
         loading(false)
     })
-}
-
-let goToLogin = function() {
-    state.page = Page.Login
 }
 
 </script>
@@ -59,7 +64,7 @@ let goToLogin = function() {
         <div class="form">
             <div class="input-group">
                 <div class="input-title">Имя пользователя</div>
-                <input class="input-element" type="text" spellcheck="false" maxlength="26" v-model="data.name">
+                <input class="input-element" type="text" spellcheck="false" maxlength="18" v-model="data.name" autofocus="true">
             </div>
             <div class="input-group">
                 <div class="input-title">Электронная почта</div>
@@ -75,7 +80,7 @@ let goToLogin = function() {
             </div>
         </div>
         <div class="buttons">
-            <div class="button --text" @click="goToLogin">Авторизация</div>
+            <div class="button --text" @click="state.page = Page.Login">Авторизация</div>
             <div class="button --main" @click="submit">Зарегистрироваться</div>
         </div>
     </div>

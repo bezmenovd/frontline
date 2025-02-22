@@ -31,4 +31,22 @@
             text-decoration: underline;
         }
     }
+    &.--secondary {
+        padding: 11.5px 35px;
+        background: rgb(120 120 120 / 51%);
+
+        &:hover {
+            background-color: rgb(188 188 188 / 51%);
+        }
+        &:active {
+            background-color: rgb(85 85 85 / 51%);
+        }
+    }
+}
+
+.buttons {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
 }

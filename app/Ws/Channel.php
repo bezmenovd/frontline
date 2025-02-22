@@ -27,25 +27,25 @@ abstract class Channel
 
         try {
             $this->server->push($client->fd, $message->toString());
-        } catch (\Exception $e) {
-            print("ws channel: client not connected: " . $e->getMessage() . "\n");
-            Log::error("ws channel: client not connected: " . $e->getMessage(), ['client' => $client]);
-        }
+        } catch (\Exception $e) {}
     }
 
-    public function broadcast(Message $message): void
+    public function broadcast(WsClient $client, Message $message, $others = false): void
     {
-        $clients = $this->getClients();
+        $clients = $this->getClients($client);
 
-        foreach ($clients as $client) {
-            /** @var WsClient $client */
-            $this->send($client, $message);
+        foreach ($clients as $c) {
+            /** @var WsClient $c */
+            if ($others && $c->fd == $client->fd) {
+                continue;
+            }
+            $this->send($c, $message);
         }
     }
 
     public function subscribe(WsClient $client): bool 
     {
-        $clients = $this->getClients();
+        $clients = $this->getClients($client);
 
         foreach ($clients as $existingClient) {
             /** @var WsClient $client */
@@ -57,23 +57,27 @@ abstract class Channel
         
         $clients[] = $client;
 
-        $this->setClients($clients);
+        $this->setClients($client, $clients);
 
         return true;
     }
 
     public function unsubscribe(WsClient $client): void 
     {
-        $clients = $this->getClients();
+        $clients = $this->getClients($client);
 
         $clients = array_filter($clients, fn(WsClient $c) => $c->token !== $client->token);
 
-        $this->setClients($clients);
+        $this->setClients($client, $clients);
     }
 
-    public function getClients(): array
+    public function getClients(WsClient $client): array
     {
-        $data = json_decode($this->redisClient->get("channel:" . $this->channel() . ":clients"), true) ?? [];
+        $data = json_decode($this->redisClient->get("channel:" . $this->channel() . ":clients"), true);
+
+        if (! is_array($data)) {
+            return [];
+        }
         
         return array_map(fn(array $item) => new WsClient($item['fd'], $item['token']), array_filter($data, fn($item) => is_array($item)));
     }
@@ -81,11 +85,11 @@ abstract class Channel
     /**
      * @param WsClient[] $clients
      */
-    public function setClients(array $clients): void
+    public function setClients(WsClient $client, array $clients): void
     {
-        $this->redisClient->set("channel:" . $this->channel() . ":clients", json_encode(array_map(fn(WsClient $client) => [
-            'fd' => $client->fd,
-            'token' => $client->token,
+        $this->redisClient->set("channel:" . $this->channel() . ":clients", json_encode(array_map(fn(WsClient $c) => [
+            'fd' => $c->fd,
+            'token' => $c->token,
         ], $clients)));
     }
 }

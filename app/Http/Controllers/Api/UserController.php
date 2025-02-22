@@ -22,6 +22,7 @@ class UserController
 
         return [
             'user' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'rating' => $user->rating,
             ],
@@ -48,6 +49,7 @@ class UserController
 
         return response()->json([
             'user' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'rating' => $user->rating,
             ],
@@ -72,6 +74,7 @@ class UserController
 
         return response()->json([
             'user' => [
+                'id' => $user->id,
                 'name' => $user->name,
                 'rating' => $user->rating,
             ],

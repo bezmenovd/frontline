@@ -1,3 +1,5 @@
+import alert from "./shared/alert";
+
 export enum WsChannel {
     Main = "main",
     Lobby = "lobby",
@@ -81,7 +83,9 @@ class WsManager
             }
         }
         this.wsclient.onError = () => {
-            throw new Error("failed to connect");
+            alert("Ошибка", "Нет подключения к серверу")
+            localStorage.removeItem('token')
+            window.location.href = window.location.href
         }
     }
 

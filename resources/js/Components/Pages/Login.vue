@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { login } from '../../api/user';
 import state from '../../state';
-import { Page, User } from '../../types';
+import { Host, Page, User } from '../../types';
 import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import { loading } from '../loading';
@@ -36,7 +36,8 @@ let submit = function() {
         state.user = r.user
 
         fetchLobby().then((response) => {
-            state.lobby.chat_messages = response.chat_messages
+            state.lobby.chatMessages = response.chatMessages
+            state.lobby.hosts.list = response.hosts
             state.page = Page.Lobby
         }).catch(error => {
             useToast({position:'top'}).error(error)
@@ -49,10 +50,6 @@ let submit = function() {
     })
 }
 
-let goToRegister = function() {
-    state.page = Page.Register
-}
-
 </script>
 
 <template>
@@ -61,7 +58,7 @@ let goToRegister = function() {
         <div class="form" @keyup.enter.stop.prevent="submit">
             <div class="input-group">
                 <div class="input-title">Имя пользователя</div>
-                <input class="input-element" type="text" spellcheck="false" maxlength="26" v-model="data.name">
+                <input class="input-element" type="text" spellcheck="false" maxlength="26" v-model="data.name" autofocus="true">
             </div>
             <div class="input-group">
                 <div class="input-title">Пароль</div>
@@ -69,7 +66,7 @@ let goToRegister = function() {
             </div>
         </div>
         <div class="buttons">
-            <div class="button --text" @click="goToRegister">Регистрация</div>
+            <div class="button --text" @click="state.page = Page.Register">Регистрация</div>
             <div class="button --main" @click="submit">Войти</div>
         </div>
     </div>
@@ -89,16 +86,5 @@ let goToRegister = function() {
 }
 .panel-title {
     justify-content: center;
-}
-.input-element {
-    font-family: monospace;
-}
-.input-group:not(:first-of-type) {
-    margin-top: 20px;
-}
-.buttons {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
 }
 </style>

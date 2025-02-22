@@ -1,46 +1,144 @@
 <script setup lang="ts">
-import Games from "./Lobby/Games.vue";
+import Hosts from "./Lobby/Hosts.vue";
+import HostComponent from "./Lobby/Host.vue";
 import state from "../../state";
 import { wsmanager, WsChannel } from "../../ws";
-import { onMounted, ref } from "vue";
-import { Page } from "../../types";
+import { onMounted, reactive, ref, watch } from "vue";
+import { ChatMessage, Host, Page, User } from "../../types";
 import { useToast } from "vue-toast-notification";
+import Modal from "../Shared/Modal.vue";
+import Selector from "../Shared/Selector.vue";
+import { loading } from "../loading";
+import alert from "../../shared/alert";
 
 
 
 let logout = function() {
-    wsmanager.close()
     localStorage.removeItem('token')
-    state.page = Page.Login
-    wsmanager.reopen()
+    window.location.href = window.location.href
 }
 
 let online = ref(0);
-let chatElement = null
+let chatElement : HTMLElement | null = null
 
 onMounted(() => {
     chatElement = document.querySelector(".chat-area")
     setTimeout(() => {
-        chatElement.scrollTop = chatElement.scrollHeight;
+        if (chatElement !== null) {
+            chatElement.scrollTop = chatElement.scrollHeight;
+        }
     }, 100)
+})
+
+
+let subscribeToHost = () => {
+    wsmanager.subscribe(WsChannel.Host, (type: string, payload: any) => {
+        if (type === "user_joined") {
+            let info = <{
+                message: ChatMessage,
+                user: {
+                    id: number,
+                    name: string,
+                }
+            }>payload
+            state.lobby.hosts.connected?.chatMessages.push(info.message)
+            state.lobby.hosts.connected?.users.push(info.user)
+        }
+        if (type === "user_left") {
+            let data = <{
+                user_id: number,
+                message: ChatMessage,
+            }>payload
+            if (state.lobby.hosts.connected !== undefined) {
+                state.lobby.hosts.connected.chatMessages.push(data.message)
+                state.lobby.hosts.connected.users = state.lobby.hosts.connected.users.filter((u: {id: number, name: string}) => u.id !== data.user_id)
+            }
+            if (data.user_id === state.user.id) {
+                state.lobby.hosts.connected = undefined
+                state.lobby.hosts.selected = undefined
+                loading(false)
+            }
+        }
+        if (type === "new_message") {
+            let newMessage = <ChatMessage>payload
+            state.lobby.hosts.connected?.chatMessages.push(newMessage);
+        }
+    })
+}
+
+wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
+    if (type === "online") {
+        let data = <{
+            online: number
+        }>payload
+        online.value = data.online;
+    }
+    if (type === "new_message") {
+        let newMessage = <ChatMessage>payload
+        state.lobby.chatMessages.push(newMessage)
+        setTimeout(() => {
+            if (chatElement !== null) {
+                chatElement.scrollTop = chatElement.scrollHeight;
+            }
+        }, 100)
+    }
+    if (type === "new_host") {
+        let newHost = <Host>payload;
+        state.lobby.hosts.list.push(newHost);
+
+        if (newHost.user.id === state.user.id) {
+            loading(false)
+            state.lobby.hosts.selected = newHost
+            state.lobby.hosts.connected = newHost
+            subscribeToHost()
+        }
+    }
+    if (type === "connected_to_host") {
+        loading(false)
+        let connectedHost = <Host>payload;
+        state.lobby.hosts.selected = connectedHost
+        state.lobby.hosts.connected = connectedHost
+        let connectedHostInList = state.lobby.hosts.list.find((h: Host) => h.id === connectedHost.id);
+        if (connectedHostInList !== undefined) {
+            Object.assign(connectedHostInList, connectedHost)
+        }
+        subscribeToHost()
+    }
+    if (type === "host_deleted") {
+        let deletedHostId = <number>payload
+        state.lobby.hosts.list = state.lobby.hosts.list.filter((h: Host) => h.id !== deletedHostId)
+        if (state.lobby.hosts.selected && state.lobby.hosts.selected.id == deletedHostId) {
+            state.lobby.hosts.selected = undefined
+        }
+        if (state.lobby.hosts.connected && state.lobby.hosts.connected.id == deletedHostId) {
+            if (state.lobby.hosts.connected.user.id === state.user.id) {
+                loading(false)
+            } else {
+                alert("Ошибка", "Хост покинул игру");
+            }
+            state.lobby.hosts.connected = undefined
+        }
+    }
+    if (type === "host_updated") {
+        let newHostState = <Host>payload
+        let currentHost = state.lobby.hosts.list.find((h: Host) => h.id === newHostState.id);
+        if (currentHost !== undefined) {
+            Object.assign(currentHost, newHostState)
+            if (state.lobby.hosts.selected?.id === newHostState.id) {
+                Object.assign(state.lobby.hosts.selected, newHostState)
+            }
+            if (state.lobby.hosts.connected?.id === newHostState.id) {
+                Object.assign(state.lobby.hosts.connected, newHostState)
+            }
+        }
+    }
 })
 
 wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
     if (type === "already_logged_in") {
-        useToast({position:'top'}).error("Пользователь уже авторизован")
-        logout()
-    }
-})
-
-wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
-    if (type === "online") {
-        online.value = payload;
-    }
-    if (type === "new_message") {
-        state.lobby.chat_messages.push(payload)
-        setTimeout(() => {
-            chatElement.scrollTop = chatElement.scrollHeight;
-        }, 100)
+        alert("Ошибка", "Пользователь уже авторизован", () => {
+            logout()
+        })
     }
 })
 
@@ -57,6 +155,49 @@ let sendMessage = function() {
     newMessageText.value = "";
 }
 
+
+let newHost = reactive({
+    showModal: false,
+    data: {
+        description: "",
+        players: 2,
+    },
+    cancel() {
+        this.showModal = false;
+        this.data.description = "";
+        this.data.players = 2;
+    },
+    send() {
+        this.showModal = false
+        loading()
+        wsmanager.send(WsChannel.Lobby, "new_host", {
+            description: this.data.description,
+            players: this.data.players,
+        });
+    }
+})
+
+let connectToHost = function(host: Host) {
+    loading()
+    wsmanager.send(WsChannel.Lobby, "connect_to_host", {
+        id: host.id
+    });
+}
+
+let deleteHost = function() {
+    loading()
+    wsmanager.send(WsChannel.Host, "delete_host", {})
+}
+
+let leaveHost = function() {
+    loading()
+    wsmanager.send(WsChannel.Host, "leave_host", {})
+}
+
+watch([() => state.lobby.hosts.connected?.size, () => state.lobby.hosts.connected?.water], () => {
+    wsmanager.send(WsChannel.Host, "update_host", state.lobby.hosts.connected)
+})
+
 </script>
 
 <template>
@@ -64,13 +205,27 @@ let sendMessage = function() {
         <div class="panel games-list">
             <div class="panel-title games-list-title">
                 Игры
-                <div class="button --main">Создать</div>
+                <div v-if="state.lobby.hosts.connected === undefined" class="button --main" @click="newHost.showModal = true">Создать</div>
             </div>
-            <Games />
+            <Hosts v-model="state.lobby.hosts.selected"/>
         </div>
         <div class="panel game">
             <div class="panel-title">
                 Игра
+                <div v-if="state.lobby.hosts.selected !== undefined && state.lobby.hosts.connected === undefined && state.lobby.hosts.selected.users.length < state.lobby.hosts.selected.players" class="button --main" @click="connectToHost(state.lobby.hosts.selected)" style="margin-left: auto">Присоединиться</div>
+            </div>
+            <div class="game-info">
+                <template v-if="state.lobby.hosts.selected == null && state.lobby.hosts.connected == null">
+                    <div class="game-no-selected-host">Выберите игру или создайте новую</div>
+                </template>
+                <template v-else>
+                    <HostComponent />
+                </template>
+            </div>
+            <div class="buttons game-buttons">
+                <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --secondary" @click="deleteHost()">Удалить и выйти</div>
+                <div v-if="state.lobby.hosts.connected && state.lobby.hosts.connected?.user.id !== state.user.id" class="button --secondary" @click="leaveHost()">Выйти</div>
+                <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --main" @click="">Начать</div>
             </div>
         </div>
         <div class="right-panel">
@@ -83,19 +238,21 @@ let sendMessage = function() {
                     </div>
                     <div class="player-panel-info-item --rating">
                         <img src="/public/icons/star.png">
-                        {{ state.user?.rating }}
+                        {{ state.user?.rating ?? 0 }}
                     </div>
                 </div>
             </div>
             <div class="panel chat">
                 <div class="panel-title">
-                    Чат
+                    Общий чат
                     <div class="game-online">Онлайн: <span style="font-family: monospace">{{ online }}</span></div>
                 </div>
                 <div class="chat-area">
-                    <div class="chat-message" v-for="message in state.lobby.chat_messages">
+                    <div class="chat-message" v-for="message in state.lobby.chatMessages">
                         <div class="chat-message-time">[{{ message.datetime }}]</div>
-                        <div class="chat-message-user">{{ message.user.name }}</div>: 
+                        <template v-if="message.user.id > 0">
+                            <div class="chat-message-user">{{ message.user.name }}</div>: 
+                        </template>
                         {{ message.text }}
                     </div>
                 </div>
@@ -105,6 +262,27 @@ let sendMessage = function() {
             </div>
         </div>
     </div>
+
+    <Modal title="Создать новую игру" v-if="newHost.showModal">
+        <template #body>
+            <div class="form" @keyup.enter.stop.prevent style="margin-bottom: 20px">
+                <div class="input-group">
+                    <div class="input-title">Описание</div>
+                    <input class="input-element" type="text" spellcheck="false" size="36" maxlength="36" v-model="newHost.data.description" autofocus>
+                </div>
+                <div class="input-group">
+                    <div class="input-title">
+                        Игроки
+                    </div>
+                    <Selector :values="[2,4,8,16]" :default="2" v-model="newHost.data.players"/>
+                </div>
+            </div>
+        </template>
+        <template #buttons>
+            <div class="button --secondary" @click="newHost.cancel()">Закрыть</div>
+            <div class="button --main" @click="newHost.send()">Создать</div>
+        </template>
+    </Modal>
 </template>
 
 <style lang="scss">
@@ -192,6 +370,9 @@ let sendMessage = function() {
     position: relative;
     max-height: calc(100vh - 40px);
     overflow: visible;
+    display: grid;
+    grid-template-rows: 40px 1fr 40px;
+    gap: 20px;
 
     &::before {
         content: '';
@@ -200,6 +381,19 @@ let sendMessage = function() {
         height: calc(100% - 40px);
         border-left: 2px dashed #2f2f2f;
         left: -12px;
+        top: 20px;
+    }
+
+    &-no-selected-host {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: .5;
+    }
+
+    &-info {
     }
 }
 .chat {

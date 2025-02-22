@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
-import { ChatMessage } from "../types";
+import { ChatMessage, Host } from "../types";
 
-export function fetchLobby() : Promise<{ chat_messages: ChatMessage[] }> {
+export function fetchLobby() : Promise<{ chatMessages: ChatMessage[], hosts: Host[] }> {
     return new Promise((resolve, reject) => {
         axios.get("/api/fetch-lobby").then((r : AxiosResponse) => {
             if (typeof r.data.error === "string") {

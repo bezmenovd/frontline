@@ -3,6 +3,7 @@
 namespace App\Ws;
 
 use App\Models\User;
+use App\Ws\Channels\HostChannel;
 use App\Ws\Channels\LobbyChannel;
 use App\Ws\Channels\MainChannel;
 use App\Ws\Client as WsClient;
@@ -19,6 +20,7 @@ class GameServer
 
     public MainChannel $mainChannel;
     public LobbyChannel $lobbyChannel;
+    public HostChannel $hostChannel;
 
     public function __construct(
         WsServer $wsServer,
@@ -30,11 +32,14 @@ class GameServer
 
         $this->mainChannel = new MainChannel($this->wsServer, $this->redisClient, $this->eventBus);
         $this->lobbyChannel = new LobbyChannel($this->wsServer, $this->redisClient, $this->eventBus);
+        $this->hostChannel = new HostChannel($this->wsServer, $this->redisClient, $this->eventBus);
     }
 
     public function start()
     {
-        $this->wsServer->on("message", function (WsServer $server, Frame $frame){
+        $this->redisClient->set("clients", json_encode([]));
+
+        $this->wsServer->on("message", function (WsServer $server, Frame $frame) {
             $data = json_decode($frame->data, true);
 
             if (! key_exists('token', $data) || ! key_exists('type', $data) || ! key_exists('payload', $data)) {
@@ -51,7 +56,9 @@ class GameServer
             $client = new WsClient($frame->fd, $data['token']);
             
             $clients = json_decode($this->redisClient->get("clients"), true) ?? [];
-            $clients[$frame->fd] = $data['token'];
+            if (! in_array($data['token'], $clients)) {
+                $clients[$frame->fd] = $data['token'];
+            }
 
             $this->redisClient->set("clients", json_encode($clients));
 
@@ -96,6 +103,9 @@ class GameServer
                         case "lobby":
                             $this->lobbyChannel->handle($client, $data['type'], $data['payload']);
                         break;
+                        case "host":
+                            $this->hostChannel->handle($client, $data['type'], $data['payload']);
+                        break;
                     }
                 break;
             };
@@ -107,8 +117,9 @@ class GameServer
             if (key_exists($fd, $clients)) {
                 $client = new WsClient($fd, $clients[$fd]);
 
-                $this->lobbyChannel->unsubscribe($client);
+                $this->hostChannel->unsubscribe($client);
                 $this->mainChannel->unsubscribe($client);
+                $this->lobbyChannel->unsubscribe($client);
 
                 unset($clients[$fd]);
 

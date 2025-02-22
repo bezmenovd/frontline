@@ -13,8 +13,10 @@ class EventBus
 
     public function dispatch(string $type, ...$args): void
     {
-        foreach ($this->handlers[$type] as $handler) {
-            $handler(...$args);
+        if (key_exists($type, $this->handlers)) {
+            foreach ($this->handlers[$type] as $handler) {
+                $handler(...$args);
+            }
         }
     }
 }

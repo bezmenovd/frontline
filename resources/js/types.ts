@@ -6,12 +6,14 @@ export enum Page {
 }
 
 export type User = {
+    id: number,
     name: string,
     rating: number,
 }
 
 export type ChatMessage = {
     id: number,
+    host_id: number | null,
     datetime: string,
     user: {
         id: number,
@@ -20,3 +22,19 @@ export type ChatMessage = {
     text: string,
 }
 
+export type Host = {
+    id: number,
+    user: {
+        id: number,
+        name: string,
+    },
+    description: string,
+    players: number,
+    size: string,
+    water: string,
+    users: {
+        id: number,
+        name: string
+    }[],
+    chatMessages: ChatMessage[],
+}

@@ -5,12 +5,13 @@ import Login from "./Pages/Login.vue";
 import Register from "./Pages/Register.vue";
 import Lobby from "./Pages/Lobby.vue";
 import state from "../state";
-import { Page, User } from "../types";
+import { Host, Page, User } from "../types";
 import { getUser } from "../api/user";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import axios from "axios";
 import { fetchLobby } from '../api/lobby';
 import { useToast } from 'vue-toast-notification';
+import Modal from "./Shared/Modal.vue";
 
 axios.defaults.headers.common['X-TOKEN'] = localStorage.getItem('token');
 
@@ -19,7 +20,8 @@ onMounted(() => {
     getUser().then((user: User) => {
         state.user = user
         fetchLobby().then((response) => {
-            state.lobby.chat_messages = response.chat_messages
+            state.lobby.chatMessages = response.chatMessages
+            state.lobby.hosts.list = response.hosts
             state.page = Page.Lobby
         }).catch(error => {
             useToast({position:'top'}).error(error)
@@ -42,7 +44,7 @@ let currentComponent = computed(() => {
             return Lobby;
         case Page.Start:
             return null;
-      }
+    }
 })
 
 </script>
@@ -50,9 +52,19 @@ let currentComponent = computed(() => {
 <template>
     <div class="container">
         <transition name="fade" mode="out-in">
-            <component :is="currentComponent"/>
+            <component :is="currentComponent" :key="state.page"/>
         </transition>
         <Loading v-if="loadingNow"/>
+
+
+        <Modal :title="state.alert.title" v-if="state.alert.showModal">
+            <template #body>
+                {{ state.alert.text }}
+            </template>
+            <template #buttons>
+                <div class="button --secondary" @click="state.alert.onClose(); state.alert.showModal = false" style="margin: auto">Закрыть</div>
+            </template>
+        </Modal>
     </div>
     <div class="window-size-warning">
         Минимальное разрешение для игры - 1280x720 px

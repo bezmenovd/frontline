@@ -30,7 +30,7 @@ class WebsocketServer extends Command
     {
         $wsServer = new Server("0.0.0.0", 8080);
         $wsServer->set([
-            'worker_num' => 16,
+            'worker_num' => 64,
         ]);
 
         $redisClient = new Client([
