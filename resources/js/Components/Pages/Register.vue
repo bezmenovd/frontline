@@ -64,7 +64,7 @@ let submit = function() {
         <div class="form">
             <div class="input-group">
                 <div class="input-title">Имя пользователя</div>
-                <input class="input-element" type="text" spellcheck="false" maxlength="18" v-model="data.name" autofocus="true">
+                <input class="input-element" type="text" spellcheck="false" maxlength="16" v-model="data.name" autofocus="true">
             </div>
             <div class="input-group">
                 <div class="input-title">Электронная почта</div>

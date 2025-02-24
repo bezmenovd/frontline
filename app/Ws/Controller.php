@@ -3,6 +3,7 @@
 namespace App\Ws;
 
 use App\Models\User;
+use App\Ws\Channels\GameChannel;
 use App\Ws\Channels\HostChannel;
 use App\Ws\Channels\LobbyChannel;
 use App\Ws\Channels\MainChannel;
@@ -12,7 +13,7 @@ use Predis\Client;
 use Swoole\WebSocket\Server as WsServer;
 use Swoole\WebSocket\Frame;
 
-class GameServer
+class Controller
 {
     public WsServer $wsServer;
     public Client $redisClient;
@@ -21,6 +22,7 @@ class GameServer
     public MainChannel $mainChannel;
     public LobbyChannel $lobbyChannel;
     public HostChannel $hostChannel;
+    public GameChannel $gameChannel;
 
     public function __construct(
         WsServer $wsServer,
@@ -33,6 +35,7 @@ class GameServer
         $this->mainChannel = new MainChannel($this->wsServer, $this->redisClient, $this->eventBus);
         $this->lobbyChannel = new LobbyChannel($this->wsServer, $this->redisClient, $this->eventBus);
         $this->hostChannel = new HostChannel($this->wsServer, $this->redisClient, $this->eventBus);
+        $this->gameChannel = new GameChannel($this->wsServer, $this->redisClient, $this->eventBus);
     }
 
     public function start()
@@ -40,6 +43,7 @@ class GameServer
         $this->redisClient->set("clients", json_encode([]));
 
         $this->wsServer->on("message", function (WsServer $server, Frame $frame) {
+
             $data = json_decode($frame->data, true);
 
             if (! key_exists('token', $data) || ! key_exists('type', $data) || ! key_exists('payload', $data)) {
@@ -58,9 +62,9 @@ class GameServer
             $clients = json_decode($this->redisClient->get("clients"), true) ?? [];
             if (! in_array($data['token'], $clients)) {
                 $clients[$frame->fd] = $data['token'];
+                
+                $this->redisClient->set("clients", json_encode($clients));
             }
-
-            $this->redisClient->set("clients", json_encode($clients));
 
             switch ($data['type']) {
                 case "subscribe":
@@ -106,18 +110,23 @@ class GameServer
                         case "host":
                             $this->hostChannel->handle($client, $data['type'], $data['payload']);
                         break;
+                        case "game":
+                            $this->gameChannel->handle($client, $data['type'], $data['payload']);
+                        break;
                     }
                 break;
             };
         });
 
         $this->wsServer->on("close", function(WsServer $wsServer, int $fd) {
+
             $clients = json_decode($this->redisClient->get("clients"), true) ?? [];
 
             if (key_exists($fd, $clients)) {
                 $client = new WsClient($fd, $clients[$fd]);
 
                 $this->hostChannel->unsubscribe($client);
+                $this->gameChannel->unsubscribe($client);
                 $this->mainChannel->unsubscribe($client);
                 $this->lobbyChannel->unsubscribe($client);
 
@@ -130,19 +139,5 @@ class GameServer
         $this->wsServer->on('finish', function() {});
 
         $this->wsServer->start();
-    }
-
-    public function __destruct()
-    {
-        $clients = json_decode($this->redisClient->get("clients"), true) ?? [];
-
-        foreach ($clients as $fd => $token) {
-            $client = new WsClient($fd, $token);
-
-            $this->lobbyChannel->unsubscribe($client);
-            $this->mainChannel->unsubscribe($client);
-        }
-
-        $this->redisClient->set("clients", '[]');
     }
 }

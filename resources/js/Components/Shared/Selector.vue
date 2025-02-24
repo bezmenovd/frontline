@@ -26,7 +26,7 @@ if (props.default) {
     display: flex;
     border: 1px solid rgba(229, 231, 235, 0.1450980392);
     border-radius: 6px;
-    gap: 1px;
+    gap: 2px;
 
     &.disabled {
         pointer-events: none;

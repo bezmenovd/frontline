@@ -58,7 +58,7 @@ let submit = function() {
         <div class="form" @keyup.enter.stop.prevent="submit">
             <div class="input-group">
                 <div class="input-title">Имя пользователя</div>
-                <input class="input-element" type="text" spellcheck="false" maxlength="26" v-model="data.name" autofocus="true">
+                <input class="input-element" type="text" spellcheck="false" maxlength="16" v-model="data.name" autofocus="true">
             </div>
             <div class="input-group">
                 <div class="input-title">Пароль</div>

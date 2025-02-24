@@ -20,13 +20,7 @@ class MainChannel extends Channel
 
     public function subscribe(WsClient $client): bool
     {
-        $subscribed = parent::subscribe($client);
-
-        if (! $subscribed) {
-            $this->send($client, new Message("already_logged_in"));
-            $this->server->disconnect($client->fd);
-            return false;
-        }
+        parent::subscribe($client);
 
         $this->redisClient->set("online", count($this->getClients($client)));
         $this->eventBus->dispatch("main:online_increased", $client);

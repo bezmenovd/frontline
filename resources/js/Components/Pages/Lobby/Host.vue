@@ -85,8 +85,7 @@ watch(() => state.lobby.hosts.connected?.chatMessages.length, () => {
                         <div class="chat-message-time">[{{ message.datetime }}]</div>
                         <template v-if="message.user.id > 0">
                             <div class="chat-message-user">{{ message.user.name }}</div>: 
-                        </template>
-                        {{ message.text }}
+                        </template><span>{{ message.text }}</span>
                     </div>
                 </div>
                 <div class="chat-input">

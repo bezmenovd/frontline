@@ -4,6 +4,7 @@ import { ChatMessage, Host, Page, User } from "./types";
 class State {
     page: Page = Page.Start;
     user: User = <User>{};
+    logged_in: boolean = false;
     lobby: {
         chatMessages: ChatMessage[],
         hosts: {

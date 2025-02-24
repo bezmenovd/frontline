@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Ws\GameServer;
+use App\Ws\Controller;
 use Illuminate\Console\Command;
 use Predis\Client;
 use Swoole\WebSocket\Server;
@@ -28,11 +28,14 @@ class WebsocketServer extends Command
      */
     public function handle()
     {
-        $wsServer = new Server("0.0.0.0", 8080);
+        $wsServer = new Server("localhost", 8080);
         $wsServer->set([
             'worker_num' => 64,
+            'buffer_output_size' => 4 * 1024 * 1024,
+            'socket_buffer_size' => 2 * 1024 * 1024,
+            'package_max_length' => 10 * 1024 * 1024,
         ]);
-
+        
         $redisClient = new Client([
             'scheme' => 'tcp',
             'host' => 'redis',
@@ -40,7 +43,7 @@ class WebsocketServer extends Command
         ]);
         $redisClient->connect();
 
-        $gameServer = new GameServer($wsServer, $redisClient);
-        $gameServer->start();
+        $controller = new Controller($wsServer, $redisClient);
+        $controller->start();
     }
 }

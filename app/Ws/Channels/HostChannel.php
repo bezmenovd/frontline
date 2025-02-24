@@ -3,6 +3,7 @@
 namespace App\Ws\Channels;
 
 use App\Models\ChatMessage;
+use App\Models\Game;
 use App\Models\Host;
 use App\Models\Host\Size;
 use App\Models\Host\Water;
@@ -119,8 +120,10 @@ class HostChannel extends Channel
         }
 
         $data = json_decode($this->redisClient->get("channel:" . $this->channel() . ":" . $host->id . ":clients"), true) ?? [];
+        $data = array_filter($data, fn($item) => is_array($item));
+        $clients = array_map(fn(array $item) => new WsClient($item['fd'], $item['token']), $data);
         
-        return array_map(fn(array $item) => new WsClient($item['fd'], $item['token']), array_filter($data, fn($item) => is_array($item)));
+        return $clients;
     }
 
     /**
@@ -154,6 +157,9 @@ class HostChannel extends Channel
             break;
             case "new_message":
                 $this->newMessage($client, $payload);
+            break;
+            case "start_game":
+                $this->startGame($client, $payload);
             break;
         }
     }
@@ -256,5 +262,38 @@ class HostChannel extends Channel
             ],
             'text' => $message->text,
         ]));
+    }
+
+    protected function startGame(WsClient $client, mixed $payload): void
+    {
+        $user = $client->getUser();
+        $host = $user->host;
+
+        if (is_null($host) || $host->user->isNot($user)) {
+            return;
+        }
+
+        $clients = $this->getClients($client);
+
+        $this->broadcast($client, new Message("game_started", [
+            'host_id' => $host->id,
+        ]));
+        $this->setClients($client, []);
+
+        $game = new Game();
+        $game->players = $host->players;
+        $game->size = $host->size;
+        $game->water = $host->water;
+        $game->save();
+
+        foreach ($host->users as $user) {
+            $user->game_id = $game->id;
+            $user->host_id = null;
+            $user->save();
+        }
+
+        $host->delete();
+
+        $this->eventBus->dispatch("host:start_game", $game, $clients);
     }
 }

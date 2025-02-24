@@ -6,24 +6,21 @@ use App\Models\Host\Size;
 use App\Models\Host\Water;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property int $user_id
- * @property User $user
+ * @property Carbon $finished_at
  * @property Collection<User> $users
  * @property Collection<ChatMessage> $chatMessages
- * @property string $description
+ * @property Collection<GameResult> $results
  * @property int $players
  * @property Size $size
  * @property Water $water
  */
-class Host extends Model
+class Game extends Model
 {
     protected $guarded = [
         'id',
@@ -37,11 +34,6 @@ class Host extends Model
         ];
     }
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
-
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'host_id', 'id');
@@ -50,5 +42,10 @@ class Host extends Model
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'host_id', 'id');
+    }
+
+    public function results(): HasMany
+    {
+        return $this->hasMany(GameResult::class, 'game_id', 'id');
     }
 }

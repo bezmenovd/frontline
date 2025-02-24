@@ -16,7 +16,9 @@ use Illuminate\Notifications\Notifiable;
  * @property string $token
  * @property int $rating
  * @property int $host_id
- * @property Host $host
+ * @property ?Host $host
+ * @property int $game_id
+ * @property ?Game $game
  */
 class User extends Authenticatable
 {
@@ -37,5 +39,10 @@ class User extends Authenticatable
     public function host(): BelongsTo
     {
         return $this->belongsTo(Host::class, 'host_id', 'id');
+    }
+
+    public function game(): BelongsTo
+    {
+        return $this->belongsTo(Game::class, 'game_id', 'id');
     }
 }

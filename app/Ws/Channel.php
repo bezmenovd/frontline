@@ -2,7 +2,6 @@
 
 namespace App\Ws;
 
-use Illuminate\Support\Facades\Log;
 use Swoole\WebSocket\Server;
 use Predis\Client;
 use App\Ws\Client as WsClient;
@@ -47,11 +46,14 @@ abstract class Channel
     {
         $clients = $this->getClients($client);
 
-        foreach ($clients as $existingClient) {
-            /** @var WsClient $client */
+        foreach ($clients as $key => $existingClient) {
+            /** @var WsClient $existingClient */
             if ($existingClient->token === $client->token) {
-                $this->send($client, new Message("already_subscribed"));
-                return false;
+                // print("already subscribed\n");
+                try {
+                    $this->server->disconnect($existingClient->fd);
+                } catch (\Exception $e) {}
+                unset($clients[$key]);
             }
         }
         

@@ -4,6 +4,7 @@ export enum WsChannel {
     Main = "main",
     Lobby = "lobby",
     Host = "host",
+    Game = "game",
 }
 
 class WsClient
@@ -32,7 +33,11 @@ class WsClient
     }
 
     send(args: { token: string, channel?: WsChannel, type: string, payload: object }) {
-        this.socket.send(JSON.stringify(args))
+        try {
+            this.socket.send(JSON.stringify(args))
+        } catch (e) {
+            this.onError()
+        }
     }
 
     close() {
@@ -65,6 +70,7 @@ class WsManager
         [WsChannel.Main]: (type: string, payload: any) => {},
         [WsChannel.Lobby]: (type: string, payload: any) => {},
         [WsChannel.Host]: (type: string, payload: any) => {},
+        [WsChannel.Game]: (type: string, payload: any) => {},
     };
 
     wsclient: WsClient;
@@ -83,9 +89,9 @@ class WsManager
             }
         }
         this.wsclient.onError = () => {
-            alert("Ошибка", "Нет подключения к серверу")
-            localStorage.removeItem('token')
-            window.location.href = window.location.href
+            alert("Ошибка", "Нет подключения к серверу", () => {
+                window.location.href = window.location.href
+            })
         }
     }
 

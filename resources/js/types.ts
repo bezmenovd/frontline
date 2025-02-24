@@ -3,6 +3,7 @@ export enum Page {
     Login,
     Register,
     Lobby,
+    Game,
 }
 
 export type User = {

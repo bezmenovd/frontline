@@ -15,11 +15,11 @@ class LobbyController
         $chatMessages = ChatMessage::query()
             ->where('created_at', '>', now()->startOfDay())
             ->whereNull('host_id')
+            ->whereNull('game_id')
             ->with('user')
             ->get();
 
         $hosts = Host::query()
-            ->where('active', true)
             ->with('user', 'users')
             ->get();
 

@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('hosts', function (Blueprint $table) {
+        Schema::create('game_results', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->foreignId('game_id')->references('id')->on('games')->cascadeOnDelete();
             $table->foreignId('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->string('description')->default('');
-            $table->unsignedTinyInteger('players')->default(2);
-            $table->string('size')->default('64x64');
-            $table->string('water')->default('low');
+            $table->integer('delta');
         });
     }
 
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hosts');
+        Schema::dropIfExists('game_results');
     }
 };

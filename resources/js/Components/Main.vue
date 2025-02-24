@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Loading from "./Loading.vue";
-import { loading, loadingNow } from "./loading";
+import { loading, loadingState } from "./loading";
 import Login from "./Pages/Login.vue";
 import Register from "./Pages/Register.vue";
 import Lobby from "./Pages/Lobby.vue";
+import Game from "./Pages/Game.vue";
 import state from "../state";
 import { Host, Page, User } from "../types";
 import { getUser } from "../api/user";
@@ -12,8 +13,14 @@ import axios from "axios";
 import { fetchLobby } from '../api/lobby';
 import { useToast } from 'vue-toast-notification';
 import Modal from "./Shared/Modal.vue";
+import { wsmanager } from "../ws";
 
 axios.defaults.headers.common['X-TOKEN'] = localStorage.getItem('token');
+
+window.addEventListener("beforeunload", function () {
+    wsmanager.close()
+    alert(123)
+});
 
 onMounted(() => {
     loading()
@@ -42,6 +49,8 @@ let currentComponent = computed(() => {
             return Register;
         case Page.Lobby:
             return Lobby;
+        case Page.Game:
+            return Game;
         case Page.Start:
             return null;
     }
@@ -54,7 +63,7 @@ let currentComponent = computed(() => {
         <transition name="fade" mode="out-in">
             <component :is="currentComponent" :key="state.page"/>
         </transition>
-        <Loading v-if="loadingNow"/>
+        <Loading v-if="loadingState.show" :text="loadingState.text" :opacity="loadingState.opacity"/>
 
 
         <Modal :title="state.alert.title" v-if="state.alert.showModal">
@@ -67,7 +76,8 @@ let currentComponent = computed(() => {
         </Modal>
     </div>
     <div class="window-size-warning">
-        Минимальное разрешение для игры - 1280x720 px
+        Минимальное разрешение для игры - 1280x800px<br>
+        При необходимости можно уменьшить масштаб
     </div>
 </template>
 
@@ -90,7 +100,7 @@ body {
 }
 
 .window-size-warning {
-    z-index: 9999;
+    z-index: 999999;
     display: none;
     position: absolute;
     top: 0;
@@ -101,6 +111,8 @@ body {
     color: white;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    line-height: 30px;
 }
 
 .fade-enter-active, .fade-leave-active {
@@ -110,7 +122,7 @@ body {
   opacity: 0;
 }
 
-@media (max-height: 719.99px) or (max-width: 1279.99px) {
+@media (max-height: 799.99px) or (max-width: 1279.99px) {
     .window-size-warning {
         // display: flex;
     }

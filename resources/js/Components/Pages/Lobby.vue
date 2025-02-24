@@ -63,6 +63,18 @@ let subscribeToHost = () => {
             let newMessage = <ChatMessage>payload
             state.lobby.hosts.connected?.chatMessages.push(newMessage);
         }
+        if (type === "game_started") {
+            let info = <{host_id: number}>payload
+            state.lobby.hosts.list = state.lobby.hosts.list.filter((h: Host) => h.id !== info.host_id)
+            if (state.lobby.hosts.selected?.id === info.host_id) {
+                state.lobby.hosts.selected = undefined
+                state.lobby.hosts.connected = undefined
+            }
+            wsmanager.unsubscribe(WsChannel.Host)
+            wsmanager.unsubscribe(WsChannel.Lobby)
+            loading(true, "Подключение к игре", 1)
+            state.page = Page.Game
+        }
     })
 }
 
@@ -114,7 +126,7 @@ wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
             if (state.lobby.hosts.connected.user.id === state.user.id) {
                 loading(false)
             } else {
-                alert("Ошибка", "Хост покинул игру");
+                alert("Ошибка", "Хост отменил игру");
             }
             state.lobby.hosts.connected = undefined
         }
@@ -134,13 +146,16 @@ wsmanager.subscribe(WsChannel.Lobby, (type: string, payload: any) => {
     }
 })
 
-wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
-    if (type === "already_logged_in") {
-        alert("Ошибка", "Пользователь уже авторизован", () => {
-            logout()
-        })
-    }
-})
+if (! state.logged_in) {
+    wsmanager.subscribe(WsChannel.Main, (type: string, payload: any) => {
+        if (type === "already_logged_in") {
+            alert("Ошибка", "Пользователь был повторно авторизован", () => {
+                logout()
+            })
+        }
+    })
+    state.logged_in = true
+}
 
 
 let newMessageText = ref("");
@@ -194,6 +209,10 @@ let leaveHost = function() {
     wsmanager.send(WsChannel.Host, "leave_host", {})
 }
 
+let startGame = function() {
+    wsmanager.send(WsChannel.Host, "start_game", {})
+}
+
 watch([() => state.lobby.hosts.connected?.size, () => state.lobby.hosts.connected?.water], () => {
     wsmanager.send(WsChannel.Host, "update_host", state.lobby.hosts.connected)
 })
@@ -201,91 +220,96 @@ watch([() => state.lobby.hosts.connected?.size, () => state.lobby.hosts.connecte
 </script>
 
 <template>
-    <div class="panels">
-        <div class="panel games-list">
-            <div class="panel-title games-list-title">
-                Игры
-                <div v-if="state.lobby.hosts.connected === undefined" class="button --main" @click="newHost.showModal = true">Создать</div>
-            </div>
-            <Hosts v-model="state.lobby.hosts.selected"/>
-        </div>
-        <div class="panel game">
-            <div class="panel-title">
-                Игра
-                <div v-if="state.lobby.hosts.selected !== undefined && state.lobby.hosts.connected === undefined && state.lobby.hosts.selected.users.length < state.lobby.hosts.selected.players" class="button --main" @click="connectToHost(state.lobby.hosts.selected)" style="margin-left: auto">Присоединиться</div>
-            </div>
-            <div class="game-info">
-                <template v-if="state.lobby.hosts.selected == null && state.lobby.hosts.connected == null">
-                    <div class="game-no-selected-host">Выберите игру или создайте новую</div>
-                </template>
-                <template v-else>
-                    <HostComponent />
-                </template>
-            </div>
-            <div class="buttons game-buttons">
-                <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --secondary" @click="deleteHost()">Удалить и выйти</div>
-                <div v-if="state.lobby.hosts.connected && state.lobby.hosts.connected?.user.id !== state.user.id" class="button --secondary" @click="leaveHost()">Выйти</div>
-                <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --main" @click="">Начать</div>
-            </div>
-        </div>
-        <div class="right-panel">
-            <div class="panel player-panel">
-                <div class="player-panel-info">
-                    <div class="player-panel-info-item --name">
-                        <img src="/public/icons/user.png">
-                        {{ state.user?.name }}
-                        <img src="/public/icons/logout.png" class="logout" @click="logout">
-                    </div>
-                    <div class="player-panel-info-item --rating">
-                        <img src="/public/icons/star.png">
-                        {{ state.user?.rating ?? 0 }}
-                    </div>
+    <div class="lobby">
+        <div class="panels">
+            <div class="panel games-list">
+                <div class="panel-title games-list-title">
+                    Игры
+                    <div v-if="state.lobby.hosts.connected === undefined" class="button --main" @click="newHost.showModal = true">Создать</div>
                 </div>
+                <Hosts v-model="state.lobby.hosts.selected"/>
             </div>
-            <div class="panel chat">
+            <div class="panel game">
                 <div class="panel-title">
-                    Общий чат
-                    <div class="game-online">Онлайн: <span style="font-family: monospace">{{ online }}</span></div>
+                    Игра
+                    <div v-if="state.lobby.hosts.selected !== undefined && state.lobby.hosts.connected === undefined && state.lobby.hosts.selected.users.length < state.lobby.hosts.selected.players" class="button --main" @click="connectToHost(state.lobby.hosts.selected)" style="margin-left: auto">Присоединиться</div>
                 </div>
-                <div class="chat-area">
-                    <div class="chat-message" v-for="message in state.lobby.chatMessages">
-                        <div class="chat-message-time">[{{ message.datetime }}]</div>
-                        <template v-if="message.user.id > 0">
-                            <div class="chat-message-user">{{ message.user.name }}</div>: 
-                        </template>
-                        {{ message.text }}
+                <div class="game-info">
+                    <template v-if="state.lobby.hosts.selected == null && state.lobby.hosts.connected == null">
+                        <div class="game-no-selected-host">Выберите игру или создайте новую</div>
+                    </template>
+                    <template v-else>
+                        <HostComponent />
+                    </template>
+                </div>
+                <div class="buttons game-buttons">
+                    <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --secondary" @click="deleteHost()">Удалить и выйти</div>
+                    <div v-if="state.lobby.hosts.connected && state.lobby.hosts.connected?.user.id !== state.user.id" class="button --secondary" @click="leaveHost()">Выйти</div>
+                    <div v-if="state.lobby.hosts.connected?.user.id === state.user.id" class="button --main" @click="startGame">Начать</div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="panel player-panel">
+                    <div class="player-panel-info">
+                        <div class="player-panel-info-item --name">
+                            <img src="/public/icons/user.png">
+                            {{ state.user?.name }}
+                            <img src="/public/icons/logout.png" class="logout" @click="logout">
+                        </div>
+                        <div class="player-panel-info-item --rating">
+                            <img src="/public/icons/star.png">
+                            {{ state.user?.rating ?? 0 }}
+                        </div>
                     </div>
                 </div>
-                <div class="chat-input">
-                    <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="46" placeholder="Для отправки сообщения нажмите Enter">
+                <div class="panel chat">
+                    <div class="panel-title">
+                        Общий чат
+                        <div class="game-online">Онлайн: <span style="font-family: monospace">{{ online }}</span></div>
+                    </div>
+                    <div class="chat-area">
+                        <div class="chat-message" v-for="message in state.lobby.chatMessages">
+                            <div class="chat-message-time">[{{ message.datetime }}]</div>
+                            <template v-if="message.user.id > 0">
+                                <div class="chat-message-user">{{ message.user.name }}</div>: 
+                            </template><span>{{ message.text }}</span>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" class="input-element" v-model="newMessageText" @keyup.enter.prevent.stop="sendMessage" maxLength="46" placeholder="Для отправки сообщения нажмите Enter">
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <Modal title="Создать новую игру" v-if="newHost.showModal">
-        <template #body>
-            <div class="form" @keyup.enter.stop.prevent style="margin-bottom: 20px">
-                <div class="input-group">
-                    <div class="input-title">Описание</div>
-                    <input class="input-element" type="text" spellcheck="false" size="36" maxlength="36" v-model="newHost.data.description" autofocus>
-                </div>
-                <div class="input-group">
-                    <div class="input-title">
-                        Игроки
+        <Modal title="Создать новую игру" v-if="newHost.showModal">
+            <template #body>
+                <div class="form" @keyup.enter.stop.prevent style="margin-bottom: 20px">
+                    <div class="input-group">
+                        <div class="input-title">Описание</div>
+                        <input class="input-element" type="text" spellcheck="false" size="36" maxlength="36" v-model="newHost.data.description" autofocus>
                     </div>
-                    <Selector :values="[2,4,8,16]" :default="2" v-model="newHost.data.players"/>
+                    <div class="input-group">
+                        <div class="input-title">
+                            Игроки
+                        </div>
+                        <Selector :values="[2,4,8,16]" :default="2" v-model="newHost.data.players"/>
+                    </div>
                 </div>
-            </div>
-        </template>
-        <template #buttons>
-            <div class="button --secondary" @click="newHost.cancel()">Закрыть</div>
-            <div class="button --main" @click="newHost.send()">Создать</div>
-        </template>
-    </Modal>
+            </template>
+            <template #buttons>
+                <div class="button --secondary" @click="newHost.cancel()">Закрыть</div>
+                <div class="button --main" @click="newHost.send()">Создать</div>
+            </template>
+        </Modal>
+    </div>
 </template>
 
 <style lang="scss">
+.lobby {
+    width: 100%;
+    height: 100%;
+}
 .panels {
     padding: 20px;    
     display: grid;
