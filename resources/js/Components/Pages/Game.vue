@@ -105,7 +105,6 @@ onMounted(() => {
                 const minY = -((map.scrollHeight * scale) - (window.innerHeight / 2));
                 const maxY = window.innerHeight / 2;
 
-                // Установка новых значений с учетом ограничений
                 map.style.left = Math.max(minX, Math.min(newOffsetX, maxX)) + "px";
                 map.style.top = Math.max(minY, Math.min(newOffsetY, maxY)) + "px";
             }

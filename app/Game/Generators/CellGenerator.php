@@ -46,7 +46,7 @@ class CellGenerator
 
             $hillsPoints[] = [$x, $y];
 
-            for ($j = 0; $j < 20; $j++) {
+            for ($j = 0; $j < random_int(5, 25); $j++) {
                 [$px, $py] = [$x, $y];
                 $map[$px][$py] = 3;
                 
@@ -64,8 +64,8 @@ class CellGenerator
         // mountains
         $mountainAreasCount = match ($size) {
             Size::x64 => random_int(5, 10),
-            Size::x128 => random_int(20, 40),
-            Size::x256 => random_int(70, 180),
+            Size::x128 => random_int(10, 30),
+            Size::x256 => random_int(40, 70),
         };
 
         for ($i = 0; $i < $mountainAreasCount; $i++) {
@@ -78,7 +78,7 @@ class CellGenerator
     
             $map[$px][$py] = 4;
 
-            for ($j = 0; $j < 4; $j++) {
+            for ($j = 0; $j < random_int(3, 5); $j++) {
                 [$px, $py] = [$x, $y];
                 
                 while (random_int(1, 100) > 2) {
@@ -116,10 +116,10 @@ class CellGenerator
 
         for ($i = 0; $i < $waterAreasCount; $i++) {
             if (random_int(1, 100) < 40 && isset($waterPoints[$waterPointsIdx]) && is_array($waterPoints[$waterPointsIdx])) {
-                $x = $waterPoints[$waterPointsIdx][0] + [random_int(15,20), random_int(-20,-15)][random_int(0, 1)];
+                $x = $waterPoints[$waterPointsIdx][0] + [random_int(10,15), random_int(-15,-10)][random_int(0, 1)];
                 $x = max($x, 0);
                 $x = min($x, $width-1);
-                $y = $waterPoints[$waterPointsIdx][1] + [random_int(15,20), random_int(-20,-15)][random_int(0, 1)];
+                $y = $waterPoints[$waterPointsIdx][1] + [random_int(10,15), random_int(-15,-10)][random_int(0, 1)];
                 $y = max($y, 0);
                 $y = min($y, $width-1);
                 $waterPoints[] = [$x, $y];
@@ -131,7 +131,7 @@ class CellGenerator
             }
 
             $map[$x][$y] = 1;
-            for ($j = 0; $j < 200; $j++) {
+            for ($j = 0; $j < random_int(50, 300); $j++) {
                 [$px, $py] = [$x, $y];
                 
                 while (random_int(1, 1000) > 15) {
@@ -148,19 +148,19 @@ class CellGenerator
         // rivers
         $riversCount = match ($size) {
             Size::x64 => match ($water) {
-                Water::Low => random_int(4, 6),
-                Water::Medium => random_int(6, 12),
-                Water::High => random_int(12, 16),
+                Water::Low => random_int(0, 5),
+                Water::Medium => random_int(5, 10),
+                Water::High => random_int(10, 15),
             },
             Size::x128 => match ($water) {
-                Water::Low => random_int(12, 18),
-                Water::Medium => random_int(18, 24),
-                Water::High => random_int(24, 30),
+                Water::Low => random_int(0, 10),
+                Water::Medium => random_int(10, 15),
+                Water::High => random_int(15, 20),
             },
             Size::x256 => match ($water) {
-                Water::Low => random_int(12, 20),
-                Water::Medium => random_int(20, 30),
-                Water::High => random_int(30, 40),
+                Water::Low => random_int(0, 10),
+                Water::Medium => random_int(10, 20),
+                Water::High => random_int(20, 30),
             },
         };
 
