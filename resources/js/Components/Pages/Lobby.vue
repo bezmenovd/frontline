@@ -305,10 +305,13 @@ watch([() => state.lobby.hosts.connected?.size, () => state.lobby.hosts.connecte
     </div>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .lobby {
     width: 100%;
     height: 100%;
+}
+.panel {
+    max-height: calc(100% - 40px);
 }
 .panels {
     padding: 20px;    

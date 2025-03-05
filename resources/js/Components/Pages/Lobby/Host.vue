@@ -155,4 +155,50 @@ watch(() => state.lobby.hosts.connected?.chatMessages.length, () => {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
 }
+.chat {
+    max-height: calc(100vh - 160px);
+    display: grid;
+    grid-template-rows: 40px 1fr 40px;
+    gap: 10px;
+
+    & .panel-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    & .game-online {
+        font-size: 14px;
+    }
+
+    &-area {
+        background: #0f0f0f;
+        border: 1px solid rgba(229, 231, 235, 0.1450980392);
+        overflow-y: auto;
+        // max-height: calc(100% - 100px);
+    }
+    &-message {
+        font-family: monospace;
+        user-select: text !important;
+        font-size: 14px;
+        margin-bottom: 3px;
+        overflow-wrap: break-word;
+
+        &-time {
+            display: inline;
+            opacity: .6;
+        }
+
+        &-user {
+            margin-left: 3px;
+            display: inline;
+            font-size: 14px;
+            opacity: .8;
+
+            &:hover {
+                text-decoration: underline;
+                cursor: pointer;
+            }
+        }
+    }
+}
 </style>

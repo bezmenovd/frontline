@@ -39,14 +39,24 @@ class CellGenerator
         };
 
         $hillsPoints = [];
+        $hillsPointsIdx = -1;
 
         for ($i = 0; $i < $hillsAreasCount; $i++) {
-            $x = random_int(0, $width-1);
-            $y = random_int(0, $height-1);
-
+            if (random_int(1, 100) < 80 && isset($hillsPoints[$hillsPointsIdx]) && is_array($hillsPoints[$hillsPointsIdx])) {
+                $x = $hillsPoints[$hillsPointsIdx][0] + [random_int(5,10), random_int(-10,-5)][random_int(0, 1)];
+                $x = max($x, 0);
+                $x = min($x, $width-1);
+                $y = $hillsPoints[$hillsPointsIdx][1] + [random_int(5,10), random_int(-10,-5)][random_int(0, 1)];
+                $y = max($y, 0);
+                $y = min($y, $width-1);
+            } else {
+                $x = random_int(0, $width-1);
+                $y = random_int(0, $height-1);
+            }
+            $hillsPointsIdx++;
             $hillsPoints[] = [$x, $y];
 
-            for ($j = 0; $j < random_int(5, 25); $j++) {
+            for ($j = 0; $j < random_int(20, 40); $j++) {
                 [$px, $py] = [$x, $y];
                 $map[$px][$py] = 3;
                 
@@ -62,85 +72,128 @@ class CellGenerator
         }
 
         // mountains
-        $mountainAreasCount = match ($size) {
-            Size::x64 => random_int(5, 10),
-            Size::x128 => random_int(10, 30),
-            Size::x256 => random_int(40, 70),
-        };
+        for ($x = 0; $x < $width; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                if (in_array($map[$x][$y], [3,4]) 
+                    && ($x <= 0 || in_array($map[$x-1][$y], [3,4]))
+                    && ($x >= $width-1 || in_array($map[$x+1][$y], [3,4]))
+                    && ($y <= 0 || in_array($map[$x][$y-1], [3,4]))
+                    && ($y >= $height-1 || in_array($map[$x][$y+1], [3,4]))
+                ) {
+                    if (random_int(1,100) < 80) {
+                        $map[$x][$y] = 4;
+                    }
+                }
+            }
+        }
 
-        for ($i = 0; $i < $mountainAreasCount; $i++) {
-            if (random_int(1, 100) < 80 && isset($hillsPoints[$i])) {
-                [$x, $y] = $hillsPoints[$i];
+        $hillsPoints = [];
+        $hillsPointsIdx = -1;
+
+        // hills again
+        for ($i = 0; $i < $hillsAreasCount; $i++) {
+            if (random_int(1, 100) < 95 && isset($hillsPoints[$hillsPointsIdx]) && is_array($hillsPoints[$hillsPointsIdx])) {
+                $x = $hillsPoints[$hillsPointsIdx][0] + [random_int(5,10), random_int(-10,-5)][random_int(0, 1)];
+                $x = max($x, 0);
+                $x = min($x, $width-1);
+                $y = $hillsPoints[$hillsPointsIdx][1] + [random_int(5,10), random_int(-10,-5)][random_int(0, 1)];
+                $y = max($y, 0);
+                $y = min($y, $width-1);
             } else {
                 $x = random_int(0, $width-1);
                 $y = random_int(0, $height-1);
             }
-    
-            $map[$px][$py] = 4;
 
-            for ($j = 0; $j < random_int(3, 5); $j++) {
+            for ($j = 0; $j < random_int(20, 40); $j++) {
                 [$px, $py] = [$x, $y];
+                $map[$px][$py] = 3;
                 
-                while (random_int(1, 100) > 2) {
+                while (random_int(1, 100) > 5) {
                     if (random_int(1, 2) == 1) {
                         $px += random_int(-1, 1);
                     } else {
                         $py += random_int(-1, 1);
                     }
-                    $map[$px][$py] = 4;
+                    $map[$px][$py] = 3;
                 }
             }
         }
 
         // ocean and seas
         $waterAreasCount = match ($size) {
-            Size::x64 => match ($water) {
-                Water::Low => 1,
-                Water::Medium => random_int(2, 3),
-                Water::High => random_int(3, 6),
-            },
-            Size::x128 => match ($water) {
-                Water::Low => random_int(5, 10),
-                Water::Medium => random_int(10, 15),
-                Water::High => random_int(20, 30),
-            },
-            Size::x256 => match ($water) {
-                Water::Low => random_int(10, 20),
-                Water::Medium => random_int(20, 40),
-                Water::High => random_int(40, 100),
-            },
+            Size::x64 => 1,
+            Size::x128 => 4,
+            Size::x256 => 16,
+        } * match ($water) {
+            Water::Low => random_int(10, 20),
+            Water::Medium => random_int(40, 80),
+            Water::High => random_int(50, 100),
         };
 
         $waterPoints = [];
         $waterPointsIdx = -1;
 
         for ($i = 0; $i < $waterAreasCount; $i++) {
-            if (random_int(1, 100) < 40 && isset($waterPoints[$waterPointsIdx]) && is_array($waterPoints[$waterPointsIdx])) {
-                $x = $waterPoints[$waterPointsIdx][0] + [random_int(10,15), random_int(-15,-10)][random_int(0, 1)];
+            if (random_int(1, 500) < 495 && isset($waterPoints[$waterPointsIdx]) && is_array($waterPoints[$waterPointsIdx])) {
+                $x = $waterPoints[$waterPointsIdx][0] + [random_int(2,8), random_int(-8,-2)][random_int(0, 1)];
                 $x = max($x, 0);
                 $x = min($x, $width-1);
-                $y = $waterPoints[$waterPointsIdx][1] + [random_int(10,15), random_int(-15,-10)][random_int(0, 1)];
+                $y = $waterPoints[$waterPointsIdx][1] + [random_int(2,8), random_int(-8,-2)][random_int(0, 1)];
                 $y = max($y, 0);
                 $y = min($y, $width-1);
-                $waterPoints[] = [$x, $y];
             } else {
                 $x = random_int(0, $width-1);
                 $y = random_int(0, $height-1);
-                $waterPoints[] = [$x, $y];
-                $waterPointsIdx++;
             }
+            $waterPointsIdx++;
+            $waterPoints[] = [$x, $y];
 
-            $map[$x][$y] = 1;
-            for ($j = 0; $j < random_int(50, 300); $j++) {
+            for ($j = 0; $j < random_int(20, 40); $j++) {
                 [$px, $py] = [$x, $y];
+                $map[$px][$py] = 1;
                 
-                while (random_int(1, 1000) > 15) {
+                while (random_int(1, 100) > 5) {
                     if (random_int(1, 2) == 1) {
                         $px += random_int(-1, 1);
                     } else {
                         $py += random_int(-1, 1);
                     }
                     $map[$px][$py] = 1;
+                }
+            }
+        }
+
+        // smoothing
+        for ($i = 0; $i < 5; $i++) {
+            for ($x = 1; $x < $width-1; $x++) {
+                for ($y = 1; $y < $height-1; $y++) {
+                    $neighbors = [
+                        $map[$x-1][$y-1],
+                        $map[$x-1][$y],
+                        $map[$x-1][$y+1],
+                        $map[$x][$y-1],
+                        $map[$x][$y],
+                        $map[$x][$y+1],
+                        $map[$x+1][$y-1],
+                        $map[$x+1][$y],
+                        $map[$x+1][$y+1],
+                    ];
+
+                    $counts = [];
+                    foreach ($neighbors as $type) {
+                        $counts[$type] = isset($counts[$type]) ? $counts[$type] + 1 : 1;
+                    }
+
+                    $maxType = array_keys($counts)[0];
+                    foreach ($counts as $type => $count) {
+                        if ($count > $counts[$maxType]) {
+                            $maxType = $type;
+                        }
+                    }
+
+                    if ($counts[$maxType] > 6) {
+                        $map[$x][$y] = $maxType;
+                    }
                 }
             }
         }
@@ -162,12 +215,12 @@ class CellGenerator
                 Water::Medium => random_int(10, 20),
                 Water::High => random_int(20, 30),
             },
-        };
+        } * 0.6;
 
         $riverLength = match ($size) {
-            Size::x64 => 64,
-            Size::x128 => 128,
-            Size::x256 => 256,
+            Size::x64 => 32,
+            Size::x128 => 64,
+            Size::x256 => 128,
         };
 
         for ($i = 0; $i < $riversCount; $i++) {
@@ -217,41 +270,6 @@ class CellGenerator
                 }
 
                 $map[$x][$y] = 1;
-            }
-        }
-
-        // smoothing
-        for ($i = 0; $i < 5; $i++) {
-            for ($x = 1; $x < $width-1; $x++) {
-                for ($y = 1; $y < $height-1; $y++) {
-                    $neighbors = [
-                        $map[$x-1][$y-1],
-                        $map[$x-1][$y],
-                        $map[$x-1][$y+1],
-                        $map[$x][$y-1],
-                        $map[$x][$y],
-                        $map[$x][$y+1],
-                        $map[$x+1][$y-1],
-                        $map[$x+1][$y],
-                        $map[$x+1][$y+1],
-                    ];
-
-                    $counts = [];
-                    foreach ($neighbors as $type) {
-                        $counts[$type] = isset($counts[$type]) ? $counts[$type] + 1 : 1;
-                    }
-
-                    $maxType = array_keys($counts)[0];
-                    foreach ($counts as $type => $count) {
-                        if ($count > $counts[$maxType]) {
-                            $maxType = $type;
-                        }
-                    }
-
-                    if ($counts[$maxType] > 6) {
-                        $map[$x][$y] = $maxType;
-                    }
-                }
             }
         }
 
