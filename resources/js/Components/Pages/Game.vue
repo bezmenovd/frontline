@@ -29,7 +29,7 @@ let mapElement : HTMLElement|null = null;
 let viewboxElement : HTMLElement|null = null;
 
 let scale = 1;
-let minScale = 0.125;
+let minScale = 0.075;
 
 onMounted(() => {
     // @ts-ignore
@@ -94,8 +94,8 @@ let drawMinimap = function() {
         }
     }
 
-    viewboxElement.style.width = Math.min((window.innerWidth / (mapElement.clientWidth * scale) * 178), 178) + "px";
-    viewboxElement.style.height = Math.min((window.innerHeight / (mapElement.clientHeight * scale) * 178), 178) + "px";
+    viewboxElement.style.width = (window.innerWidth / (mapElement.clientWidth * scale) * 178) + "px";
+    viewboxElement.style.height = (window.innerHeight / (mapElement.clientHeight * scale) * 178) + "px";
 }
 
 wsmanager.subscribe(WsChannel.Game, (type: string, payload: any) => {
@@ -115,7 +115,7 @@ wsmanager.subscribe(WsChannel.Game, (type: string, payload: any) => {
         map.size.width = map.ground.length;
         map.size.height = map.ground[0].length;
         loading(true, "Создание карты", 1)
-        minScale = 0.125 * (256 / Math.max(map.size.width, map.size.height))
+        minScale = 0.075 * (256 / Math.max(map.size.width, map.size.height))
         drawMap()
         drawMinimap()
         setTimeout(() => {[
@@ -206,13 +206,13 @@ onMounted(() => {
 
             viewboxElement.style.left = (-left / ((mapElement.clientWidth * scale) / 178)) + "px";
             viewboxElement.style.top = (-top / ((mapElement.clientHeight * scale) / 178)) + "px";
-            viewboxElement.style.width = Math.min((window.innerWidth / (mapElement.clientWidth * scale) * 178), 178) + "px";
-            viewboxElement.style.height = Math.min((window.innerHeight / (mapElement.clientHeight * scale) * 178), 178) + "px";
+            viewboxElement.style.width = (window.innerWidth / (mapElement.clientWidth * scale) * 178) + "px";
+            viewboxElement.style.height = (window.innerHeight / (mapElement.clientHeight * scale) * 178) + "px";
         }, { passive: false });
 
         window.addEventListener("resize", function() {
-            viewboxElement.style.width = Math.min((window.innerWidth / (mapElement.clientWidth * scale) * 178), 178) + "px";
-            viewboxElement.style.height = Math.min((window.innerHeight / (mapElement.clientHeight * scale) * 178), 178) + "px";
+            viewboxElement.style.width = (window.innerWidth / (mapElement.clientWidth * scale) * 178) + "px";
+            viewboxElement.style.height = (window.innerHeight / (mapElement.clientHeight * scale) * 178) + "px";
         })
     }
 })
